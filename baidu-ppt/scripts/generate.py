@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import os
 import random
 import sys
 import time
@@ -10,7 +11,7 @@ import time
 import requests
 
 API_BASE = "https://qianfan.baidubce.com/v2/tools/ai_ppt"
-API_KEY = "REDACTED"
+API_KEY = os.environ["BAIDU_PPT_API_KEY"]
 
 
 def headers():

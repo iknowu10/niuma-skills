@@ -2,12 +2,13 @@
 """列出百度千帆 PPT 可用模板"""
 
 import json
+import os
 import sys
 
 import requests
 
 API_BASE = "https://qianfan.baidubce.com/v2/tools/ai_ppt"
-API_KEY = "REDACTED"
+API_KEY = os.environ["BAIDU_PPT_API_KEY"]
 
 
 def main():
