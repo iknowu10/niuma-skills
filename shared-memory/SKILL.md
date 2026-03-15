@@ -10,13 +10,16 @@ Two storage backends — use both when writing, prefer Nowledge Mem for searchin
 
 ## 1. Nowledge Mem (semantic search)
 
-API: `http://host.docker.internal:14242`
+API: `${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}`
+
+Set `NOWLEDGE_MEM_URL` in your `.env` to override the default.
 
 ### Search (preferred over file grep)
 
 ```bash
 # Try Nowledge Mem first; fall back to file grep if unavailable
-RESULT=$(curl -s --max-time 5 -X POST "http://host.docker.internal:14242/memories/search" \
+NMEM_URL="${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}"
+RESULT=$(curl -s --max-time 5 -X POST "$NMEM_URL/memories/search" \
   -H "Content-Type: application/json" \
   -d '{"query": "search terms here", "limit": 5}' 2>/dev/null)
 if [ -n "$RESULT" ]; then
@@ -30,27 +33,29 @@ fi
 ### Write
 
 ```bash
-curl -s -X POST "http://host.docker.internal:14242/memories" \
+NMEM_URL="${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}"
+curl -s -X POST "$NMEM_URL/memories" \
   -H "Content-Type: application/json" \
   -d '{
-    "content": "Jun prefers TypeScript over Python for backend services.",
+    "content": "User prefers TypeScript over Python for backend services.",
     "title": "Language Preference: TypeScript",
     "importance": 0.7,
-    "metadata": {"source": "nanoclaw@mac", "category": "preference"}
+    "metadata": {"source": "nanoclaw", "category": "preference"}
   }' | python3 -m json.tool
 ```
 
 ### Read by ID
 
 ```bash
-curl -s "http://host.docker.internal:14242/memories/MEMORY_ID" | python3 -m json.tool
+NMEM_URL="${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}"
+curl -s "$NMEM_URL/memories/MEMORY_ID" | python3 -m json.tool
 ```
 
 ## 2. Shared Files (sync between instances)
 
 Directory: `/workspace/shared-memory/`
 
-Files are synced between NanoClaw (Mac) and OpenClaw (Lazycat).
+Files can be synced between agent instances via any file sync tool.
 
 ### Read files
 
@@ -63,7 +68,7 @@ cat /workspace/shared-memory/*.md
 ```bash
 cat > /workspace/shared-memory/category-short-description.md << 'EOF'
 ---
-source: nanoclaw@mac
+source: nanoclaw
 created: 2026-03-13
 category: preference
 ---
@@ -85,7 +90,7 @@ rm /workspace/shared-memory/outdated-file.md
 # Step 1: Write file (always succeeds)
 cat > /workspace/shared-memory/category-short-description.md << 'EOF'
 ---
-source: nanoclaw@mac
+source: nanoclaw
 created: 2026-03-13
 category: fact
 ---
@@ -93,7 +98,8 @@ Memory content here.
 EOF
 
 # Step 2: Try Nowledge Mem (timeout 5s, ignore failure)
-curl -s --max-time 5 -X POST "http://host.docker.internal:14242/memories" \
+NMEM_URL="${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}"
+curl -s --max-time 5 -X POST "$NMEM_URL/memories" \
   -H "Content-Type: application/json" \
   -d '{
     "content": "Memory content here.",
@@ -109,7 +115,7 @@ If curl fails or times out, the file write is already done — no data loss.
 
 ```markdown
 ---
-source: nanoclaw@mac
+source: nanoclaw
 created: 2026-03-13
 category: fact
 ---
