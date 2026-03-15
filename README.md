@@ -9,6 +9,7 @@ Each skill is a self-contained directory with a `SKILL.md` that agents can read 
 | Skill | Description |
 |-------|-------------|
 | [twitter-manager](./twitter-manager/) | Manage X (Twitter) — post, read timeline, search, like, reply, retweet, bookmarks |
+| [shared-memory](./shared-memory/) | Read and write shared memory across NanoClaw and OpenClaw instances. Supports semantic search via Nowledge Mem. |
 
 ## Usage
 
