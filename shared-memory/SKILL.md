@@ -10,22 +10,18 @@ Two storage backends — use both when writing, prefer Nowledge Mem for searchin
 
 ## 1. Nowledge Mem (semantic search)
 
-API: `${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}`
-
-Set `NOWLEDGE_MEM_URL` in your `.env` to override the default.
+A semantic memory service with a REST API. Set `NOWLEDGE_MEM_URL` in your `.env` to the base URL of your Nowledge Mem instance.
 
 ### Search (preferred over file grep)
 
 ```bash
 # Try Nowledge Mem first; fall back to file grep if unavailable
-NMEM_URL="${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}"
-RESULT=$(curl -s --max-time 5 -X POST "$NMEM_URL/memories/search" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "search terms here", "limit": 5}' 2>/dev/null)
-if [ -n "$RESULT" ]; then
-  echo "$RESULT" | python3 -m json.tool
+if [ -n "$NOWLEDGE_MEM_URL" ]; then
+  curl -s --max-time 5 -X POST "$NOWLEDGE_MEM_URL/memories/search" \
+    -H "Content-Type: application/json" \
+    -d '{"query": "search terms here", "limit": 5}' | python3 -m json.tool
 else
-  echo "[nowledge-mem unavailable, searching files]"
+  echo "[NOWLEDGE_MEM_URL not set, searching files]"
   grep -ril "search terms" /workspace/shared-memory/ 2>/dev/null | xargs cat 2>/dev/null
 fi
 ```
@@ -33,8 +29,7 @@ fi
 ### Write
 
 ```bash
-NMEM_URL="${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}"
-curl -s -X POST "$NMEM_URL/memories" \
+[ -n "$NOWLEDGE_MEM_URL" ] && curl -s -X POST "$NOWLEDGE_MEM_URL/memories" \
   -H "Content-Type: application/json" \
   -d '{
     "content": "User prefers TypeScript over Python for backend services.",
@@ -47,8 +42,7 @@ curl -s -X POST "$NMEM_URL/memories" \
 ### Read by ID
 
 ```bash
-NMEM_URL="${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}"
-curl -s "$NMEM_URL/memories/MEMORY_ID" | python3 -m json.tool
+[ -n "$NOWLEDGE_MEM_URL" ] && curl -s "$NOWLEDGE_MEM_URL/memories/MEMORY_ID" | python3 -m json.tool
 ```
 
 ## 2. Shared Files (sync between instances)
@@ -98,8 +92,7 @@ Memory content here.
 EOF
 
 # Step 2: Try Nowledge Mem (timeout 5s, ignore failure)
-NMEM_URL="${NOWLEDGE_MEM_URL:-http://host.docker.internal:14242}"
-curl -s --max-time 5 -X POST "$NMEM_URL/memories" \
+[ -n "$NOWLEDGE_MEM_URL" ] && curl -s --max-time 5 -X POST "$NOWLEDGE_MEM_URL/memories" \
   -H "Content-Type: application/json" \
   -d '{
     "content": "Memory content here.",
