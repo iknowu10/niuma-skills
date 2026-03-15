@@ -1,6 +1,6 @@
 ---
 name: shared-memory
-description: Read and write shared memory across NanoClaw and OpenClaw instances. Use to recall user preferences, project facts, past decisions, and key entities. Supports semantic search via Nowledge Mem.
+description: Read and write shared memory across agent instances. Use to recall user preferences, project facts, past decisions, and key entities. Supports semantic search via Nowledge Mem.
 allowed-tools: Bash(ls:*), Bash(cat:*), Bash(tee:*), Bash(rm:*), Bash(curl:*), Read, Write
 ---
 
@@ -8,21 +8,28 @@ allowed-tools: Bash(ls:*), Bash(cat:*), Bash(tee:*), Bash(rm:*), Bash(curl:*), R
 
 Two storage backends — use both when writing, prefer Nowledge Mem for searching.
 
+## Required Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `SHARED_MEMORY_DIR` | Path to the shared memory files directory |
+| `NOWLEDGE_MEM_URL` | Base URL of your Nowledge Mem instance (optional) |
+
+Both must be set in your `.env` before using this skill.
+
 ## 1. Nowledge Mem (semantic search)
 
-A semantic memory service with a REST API. Set `NOWLEDGE_MEM_URL` in your `.env` to the base URL of your Nowledge Mem instance.
+A semantic memory service with a REST API. Only used when `NOWLEDGE_MEM_URL` is set.
 
 ### Search (preferred over file grep)
 
 ```bash
-# Try Nowledge Mem first; fall back to file grep if unavailable
 if [ -n "$NOWLEDGE_MEM_URL" ]; then
   curl -s --max-time 5 -X POST "$NOWLEDGE_MEM_URL/memories/search" \
     -H "Content-Type: application/json" \
     -d '{"query": "search terms here", "limit": 5}' | python3 -m json.tool
 else
-  echo "[NOWLEDGE_MEM_URL not set, searching files]"
-  grep -ril "search terms" /workspace/shared-memory/ 2>/dev/null | xargs cat 2>/dev/null
+  grep -ril "search terms" "$SHARED_MEMORY_DIR" | xargs cat 2>/dev/null
 fi
 ```
 
@@ -47,33 +54,31 @@ fi
 
 ## 2. Shared Files (sync between instances)
 
-Directory: `/workspace/shared-memory/`
-
-Files can be synced between agent instances via any file sync tool.
+Files are stored in `$SHARED_MEMORY_DIR` and can be synced between agent instances via any file sync tool.
 
 ### Read files
 
 ```bash
-cat /workspace/shared-memory/*.md
+cat "$SHARED_MEMORY_DIR"/*.md
 ```
 
 ### Write file
 
 ```bash
-cat > /workspace/shared-memory/category-short-description.md << 'EOF'
+cat > "$SHARED_MEMORY_DIR/category-short-description.md" << 'EOF'
 ---
 source: nanoclaw
-created: 2026-03-13
+created: 2026-03-15
 category: preference
 ---
-Jun prefers TypeScript over Python for backend services.
+Memory content here.
 EOF
 ```
 
 ### Delete file
 
 ```bash
-rm /workspace/shared-memory/outdated-file.md
+rm "$SHARED_MEMORY_DIR/outdated-file.md"
 ```
 
 ## Write workflow
@@ -82,10 +87,10 @@ rm /workspace/shared-memory/outdated-file.md
 
 ```bash
 # Step 1: Write file (always succeeds)
-cat > /workspace/shared-memory/category-short-description.md << 'EOF'
+cat > "$SHARED_MEMORY_DIR/category-short-description.md" << 'EOF'
 ---
 source: nanoclaw
-created: 2026-03-13
+created: 2026-03-15
 category: fact
 ---
 Memory content here.
@@ -98,7 +103,7 @@ EOF
     "content": "Memory content here.",
     "title": "Short Title",
     "importance": 0.7,
-    "metadata": {"source": "nanoclaw@mac", "category": "fact"}
+    "metadata": {"source": "nanoclaw", "category": "fact"}
   }' || echo "[nowledge-mem unavailable, file-only write]"
 ```
 
@@ -109,7 +114,7 @@ If curl fails or times out, the file write is already done — no data loss.
 ```markdown
 ---
 source: nanoclaw
-created: 2026-03-13
+created: 2026-03-15
 category: fact
 ---
 Memory content here.
@@ -121,5 +126,5 @@ Categories: `preference`, `fact`, `decision`, `entity`, `other`
 
 - **Search** Nowledge Mem when user references past conversations, decisions, or knowledge
 - **Write** when you learn something about the user, project, or decisions that other instances should know
-- **Read files** when checking what OpenClaw has written recently
+- **Read files** when checking what another instance has written recently
 - Do NOT store: conversation-specific context, session state, ephemeral task details, or instance identity info
