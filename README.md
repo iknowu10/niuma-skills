@@ -11,6 +11,7 @@ Each skill is a self-contained directory with a `SKILL.md` that agents can read 
 | [twitter-manager](./twitter-manager/) | Manage X (Twitter) — post, read timeline, search, like, reply, retweet, bookmarks |
 | [shared-memory](./shared-memory/) | Read and write shared memory across NanoClaw and OpenClaw instances. Supports semantic search via Nowledge Mem. |
 | [baidu-ppt](./baidu-ppt/) | Generate PPT presentations using Baidu Qianfan API. |
+| [flights](./flights/) | 机票查询 — 查询任意航线的机票价格（数据来自携程） |
 
 ## Usage
 
